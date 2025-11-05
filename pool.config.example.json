@@ -1,0 +1,14 @@
+{
+  "network": "testnet",
+  "fullNodeUrl": "https://fullnode.testnet.sui.io:443",
+  "baseCoinType": "0x...::my_token::MYT",
+  "baseAmount": "1000",
+  "quoteCoinType": "0x2::sui::SUI",
+  "initialPrice": "0.5",
+  "lowerPrice": "0.4",
+  "upperPrice": "0.6",
+  "tickSpacing": 60,
+  "slippage": 0.01,
+  "fixAmountOnBase": true,
+  "uri": "https://example.com/myt-sui"
+}

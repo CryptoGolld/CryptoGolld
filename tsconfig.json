@@ -1,0 +1,34 @@
+{
+  // Visit https://aka.ms/tsconfig to read more about this file
+    "compilerOptions": {
+      // File Layout
+      "rootDir": "src",
+      "outDir": "dist",
+
+      // Environment Settings
+      // See also https://aka.ms/tsconfig/module
+      "module": "esnext",
+      "moduleResolution": "node",
+      "target": "es2020",
+      "lib": ["es2020"],
+      "types": ["node"],
+
+      // Node.js compatibility helpers
+      "esModuleInterop": true,
+      "moduleDetection": "force",
+
+      // Other Outputs
+      "sourceMap": true,
+      "declaration": true,
+      "declarationMap": true,
+
+      // Stricter Typechecking Options
+      "strict": true,
+      "noUncheckedIndexedAccess": true,
+      "exactOptionalPropertyTypes": true,
+
+      // Miscellaneous
+      "skipLibCheck": true,
+      "isolatedModules": true
+    }
+}
