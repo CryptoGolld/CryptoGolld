@@ -19,11 +19,13 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@mysten/sui.js": "^0.54.1",
     "@cetusprotocol/cetus-sui-clmm-sdk": "^3.0.0",
+    "@mysten/sui": "^1.44.0",
+    "@mysten/sui.js": "^0.54.1",
     "bn.js": "^5.2.1",
     "decimal.js": "^10.4.3",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "tslib": "^2.8.1"
   },
   "devDependencies": {
     "@types/bn.js": "^5.1.5",
