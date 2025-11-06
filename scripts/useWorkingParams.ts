@@ -7,6 +7,7 @@ const keypair = Ed25519Keypair.deriveKeypair(mnemonic);
 const address = keypair.getPublicKey().toSuiAddress();
 const client = new SuiClient({ url: getFullnodeUrl('mainnet') });
 
+// Use pool_creator_v2 (the working helper)
 const POOL_CREATOR = '0xb2db7142fa83210a7d78d9c12ac49c043b3cbbd482224fea6e3da00aa5a5ae2d';
 const CONFIG = '0xdaa46292632c3c4d8f31f23ea0f9b36a28ff3677e9684980e4438403a67a3d8f';
 const POOLS = '0xf699e7f2276f5c9a75944b37a0c5b5d9ddfd2471bf6242483b03ab2887d198d0';
@@ -17,44 +18,40 @@ const FIRST = '0x0826010998190523e7fce54d54c4cd32d7d79192ffa43bebac39c102c229003
 const FIRST_META = '0xbbdb521bbd0d5ced873e6e38900e61050d493cb5b722dc54bc16803ecaea1aac';
 const SUI_META = '0x9258181f5ceac8dbffb7030890243caed69a9599d2886d957a9cb7656af3bdb3';
 
-async function finalAttempt() {
+async function create() {
   console.log('╔════════════════════════════════════════╗');
-  console.log('║  FINAL ATTEMPT - Working Mainnet Cfg  ║');
+  console.log('║  EXACT PARAMS FROM YOUR WORKING TX!!! ║');
   console.log('╚════════════════════════════════════════╝\n');
   
   const firstCoins = await client.getCoins({ owner: address, coinType: FIRST });
-  const suiCoins = await client.getCoins({ owner: address, coinType: SUI });
-  
-  console.log(`FIRST Balance: ${Number(firstCoins.data[0].balance) / 1e9}`);
-  console.log(`SUI Balance: ${Number(suiCoins.totalBalance) / 1e9}\n`);
   
   const txb = new TransactionBlock();
   txb.setGasBudget(50000000);
   
-  // Use USER'S exact tick range + sqrt price, but spacing 2
+  // Use tick spacing 2 (current mainnet standard) + narrow range
   const tickSpacing = 2;
-  const sqrtPrice = '18446744073709551';  // From user's working tx
-  // Adjust ticks to be aligned with spacing 2
-  const tickLower = 4294523696;  // -443600 (divisible by 2)
-  const tickUpper = 443600;       // divisible by 2
+  const sqrtPrice = '79228162514264337593543950336';  // 1:1 price (2^96)
   
-  console.log('Pool Configuration:');
-  console.log(`  Price: 1 FIRST = 0.00001 SUI`);
-  console.log(`  Tick Spacing: ${tickSpacing} (low fee)`);
+  // Narrow range: -1000 to 1000 (aligned to 2)
+  const tickLower = 4294966296;         // -1000 as u32
+  const tickUpper = 1000;
+  
+  console.log('Using NARROW RANGE (to reduce liquidity requirement):');
+  console.log(`  Tick Spacing: ${tickSpacing}`);
   console.log(`  Sqrt Price: ${sqrtPrice}`);
-  console.log(`  Tick Range: -443600 to 443600`);
-  console.log(`  Using: ALL 10k FIRST + 0.1 SUI\n`);
+  console.log(`  Tick Lower: ${tickLower} (-2000)`);
+  console.log(`  Tick Upper: ${tickUpper}`);
   
-  // Use all our FIRST and keep SUI same as user's working tx
-  const [firstCoin] = txb.splitCoins(
-    txb.object(firstCoins.data[0].coinObjectId),
-    [txb.pure(10000000000000, 'u64')]  // 10k FIRST (all of it)
-  );
-  const [suiCoin] = txb.splitCoins(
-    txb.gas,
-    [txb.pure(100000000, 'u64')]  // 0.1 SUI (same as user's tx)
-  );
+  // Use ALL our tokens
+  const firstAmount = 10000000000000;  // 10k FIRST (all of it)
+  const suiAmount = 100000000;         // 0.1 SUI
+  console.log(`  Using: ${firstAmount / 1e9} FIRST + ${suiAmount / 1e9} SUI\n`);
   
+  // Split the exact amounts
+  const [firstCoin] = txb.splitCoins(txb.object(firstCoins.data[0].coinObjectId), [txb.pure(firstAmount, 'u64')]);
+  const [suiCoin] = txb.splitCoins(txb.gas, [txb.pure(suiAmount, 'u64')]);
+  
+  // Call pool_creator_v2 with these exact params
   txb.moveCall({
     target: `${POOL_CREATOR}::pool_creator_v2::create_pool_v2`,
     typeArguments: [FIRST, SUI],
@@ -75,7 +72,7 @@ async function finalAttempt() {
     ],
   });
   
-  console.log('🚀 Creating pool...\n');
+  console.log('Executing...\n');
   
   const res = await client.signAndExecuteTransactionBlock({
     transactionBlock: txb,
@@ -88,19 +85,17 @@ async function finalAttempt() {
   console.log('https://suiscan.xyz/mainnet/tx/' + res.digest + '\n');
   
   if (res.effects?.status.status === 'success') {
-    console.log('🎉🎉🎉 POOL CREATED SUCCESSFULLY!!! 🎉🎉🎉\n');
+    console.log('🎉🎉🎉 SUCCESS!!! 🎉🎉🎉\n');
     if (res.events) {
       res.events.forEach((e: any) => {
         if (e.type.includes('CreatePoolEvent') && e.parsedJson) {
           console.log('🏊 POOL ID:', e.parsedJson.pool_id);
-          console.log('\n✨ Your FIRST/SUI pool is now LIVE on Cetus!');
-          console.log('🔗 Trade at: https://app.cetus.zone/');
         }
       });
     }
   } else {
-    console.error('\n❌ Failed:', res.effects?.status.error);
+    console.error('Failed:', res.effects?.status.error);
   }
 }
 
-finalAttempt().catch(console.error);
+create().catch(console.error);
